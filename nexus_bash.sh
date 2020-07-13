@@ -4,7 +4,6 @@
 #
 NEXUS_BASH_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 NEXUS_BASH_INTERFACE_ROOT="${NEXUS_BASH_ROOT}/interface.d"
-NEXUS_BASH_VERBOSE=0
 
 #
 # Global Arguments
@@ -19,6 +18,11 @@ NEXUS_URL=${NEXUS_URL:-}
 #   Provide user credentials to the Nexus server. Username and password are delimited by ':'
 #   e.g. NEXUS_AUTH="username:password"
 NEXUS_AUTH=${NEXUS_AUTH:-}
+
+# NEXUS_BASH_VERBOSE: int
+#   Toggle verbose output mode
+#   e.g. NEXUS_BASH_VERBOSE=1
+NEXUS_BASH_VERBOSE=${NEXUS_BASH_VERBOSE:-0}
 
 #
 # Common Functions
@@ -38,3 +42,21 @@ nexus_available() {
 for iface in $(find "${NEXUS_BASH_INTERFACE_ROOT}" -type f -name '*.sh'); do
     source "$iface"
 done
+
+nexus_json_begin() {
+    python -c "import json, sys; data=json.load(sys.stdin); $*"
+}
+
+nexus_json_len() {
+    nexus_json_begin "print(len(data))"
+}
+
+nexus_json_value() {
+    nexus_json_begin "dict(data[$1]).get('$2', '')"
+}
+
+nexus_json_pairs() {
+    if (( $# == 1 )); then
+        nexus_json_begin "[print('{}=\'{}\''.format(k, v)) for (k, v) in dict(data[$1]).items() if k != 'attributes']"
+    fi
+}
