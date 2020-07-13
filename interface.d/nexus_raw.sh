@@ -35,6 +35,7 @@ nexus_raw_download() {
     local url
     local filename
     local dest
+    local retval
 
     url="${NEXUS_URL}/$1"
     if [[ -z $url ]]; then
@@ -55,9 +56,20 @@ nexus_raw_download() {
         mkdir -p "${dest}"
     fi
 
-    if ! curl -L "$url" > "${dest}/${filename}"; then
-        echo "Could not download data" >&2
-        return 1
+    if (( NEXUS_BASH_VERBOSE )); then
+        /bin/echo -n "Fetching '$url' => '$dest' ... " >&2
+    fi
+
+    if ! curl -s -L "$url" > "${dest}/${filename}"; then
+        retval=$?
+        if (( NEXUS_BATH_VERBOSE )); then
+            echo "failed ($retval)" >&2
+        fi
+        return $retval
+    fi
+
+    if (( NEXUS_BASH_VERBOSE )); then
+        echo "done" >&2
     fi
 
     echo "$dest/$filename"
@@ -81,11 +93,12 @@ nexus_raw_upload() {
     fi
 
     if (( NEXUS_BASH_VERBOSE )); then
-        /bin/echo -n "Uploading '$filename' => '${2}'... "
+        /bin/echo -n "Uploading '$filename' => '${2}' ... "
     fi
+
     if ! curl -s --user "${NEXUS_AUTH}" --upload-file "${filename}" "${url}/${filename}"; then
         if (( NEXUS_BASH_VERBOSE )); then
-            echo "Failed" >&2
+            echo "failed" >&2
         fi
         return 1
     fi
